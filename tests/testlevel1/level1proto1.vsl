@@ -1,0 +1,2 @@
+PROTO VOID main()
+FUNC VOID main() RETURN 1

@@ -1,0 +1,34 @@
+### Starting build.
+# Target: main.ml.depends, tags: { extension:ml, file:main.ml, ocaml, ocamldep, package(llvm), quiet, traverse }
+ocamlfind ocamldep -package llvm -modules main.ml > main.ml.depends # cached
+# Target: ast.ml.depends, tags: { extension:ml, file:ast.ml, ocaml, ocamldep, package(llvm), quiet, traverse }
+ocamlfind ocamldep -package llvm -modules ast.ml > ast.ml.depends # cached
+# Target: ast.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:ast.cmo, file:ast.ml, implem, ocaml, package(llvm), quiet, traverse }
+ocamlfind ocamlc -c -package llvm -o ast.cmo ast.ml # cached
+# Target: codegen.ml.depends, tags: { extension:ml, file:codegen.ml, ocaml, ocamldep, package(llvm), quiet, traverse }
+ocamlfind ocamldep -package llvm -modules codegen.ml > codegen.ml.depends
+# Target: symbolTableList.ml.depends, tags: { extension:ml, file:symbolTableList.ml, ocaml, ocamldep, package(llvm), quiet, traverse }
+ocamlfind ocamldep -package llvm -modules symbolTableList.ml > symbolTableList.ml.depends # cached
+# Target: symbolTableList.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:symbolTableList.cmo, file:symbolTableList.ml, implem, ocaml, package(llvm), quiet, traverse }
+ocamlfind ocamlc -c -package llvm -o symbolTableList.cmo symbolTableList.ml # cached
+# Target: parser.ml.depends, tags: { extension:ml, file:parser.ml, ocaml, ocamldep, package(llvm), pp(camlp4o), quiet, traverse, use_camlp4 }
+ocamlfind ocamldep -package llvm -pp camlp4o -modules parser.ml > parser.ml.depends # cached
+# Target: parser.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:parser.cmo, file:parser.ml, implem, ocaml, package(llvm), pp(camlp4o), quiet, traverse, use_camlp4 }
+ocamlfind ocamlc -c -I +camlp4 -package llvm -pp camlp4o -o parser.cmo parser.ml # cached
+# Target: codegen.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:codegen.cmo, file:codegen.ml, implem, ocaml, package(llvm), quiet, traverse }
+ocamlfind ocamlc -c -package llvm -o codegen.cmo codegen.ml
+# Target: main.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:main.cmo, file:main.ml, implem, ocaml, package(llvm), quiet, traverse }
+ocamlfind ocamlc -c -package llvm -o main.cmo main.ml
+# Target: ast.cmx, tags: { compile, extension:cmx, extension:ml, file:ast.cmx, file:ast.ml, implem, native, ocaml, package(llvm), quiet, traverse }
+ocamlfind ocamlopt -c -package llvm -o ast.cmx ast.ml # cached
+# Target: symbolTableList.cmx, tags: { compile, extension:cmx, extension:ml, file:symbolTableList.cmx, file:symbolTableList.ml, implem, native, ocaml, package(llvm), quiet, traverse }
+ocamlfind ocamlopt -c -package llvm -o symbolTableList.cmx symbolTableList.ml # cached
+# Target: parser.cmx, tags: { compile, extension:cmx, extension:ml, file:parser.cmx, file:parser.ml, implem, native, ocaml, package(llvm), pp(camlp4o), quiet, traverse, use_camlp4 }
+ocamlfind ocamlopt -c -I +camlp4 -package llvm -pp camlp4o -o parser.cmx parser.ml # cached
+# Target: codegen.cmx, tags: { compile, extension:cmx, extension:ml, file:codegen.cmx, file:codegen.ml, implem, native, ocaml, package(llvm), quiet, traverse }
+ocamlfind ocamlopt -c -package llvm -o codegen.cmx codegen.ml
+# Target: main.cmx, tags: { compile, extension:cmx, extension:ml, file:main.cmx, file:main.ml, implem, native, ocaml, package(llvm), quiet, traverse }
+ocamlfind ocamlopt -c -package llvm -o main.cmx main.ml
+# Target: main.native, tags: { dont_link_with, extension:native, file:main.native, g++, link, native, ocaml, package(llvm), program, quiet, traverse, use_llvm, use_llvm_analysis, use_llvm_executionengine, use_llvm_scalar_opts, use_llvm_target }
+ocamlfind ocamlopt llvm.cmxa llvm_analysis.cmxa llvm_executionengine.cmxa llvm_target.cmxa llvm_scalar_opts.cmxa -cc g++ -linkpkg -package llvm ast.cmx symbolTableList.cmx codegen.cmx parser.cmx main.cmx -o main.native
+# Compilation successful.
