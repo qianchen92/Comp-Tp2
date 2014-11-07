@@ -66,65 +66,93 @@ let create_entry_block_array_alloca the_function var_name typ size =
 
 let rec gen_expression : expression -> Llvm.llvalue = function
   | Const n ->
-      const_int n
-        (* returns a constant llvalue for that integer *)
+     const_int n
+  (* returns a constant llvalue for that integer *)
+  | Expr_Ident id ->
+     SymbolTableList.lookup(id)
   | Plus (e1,e2) ->
-      let t1 = gen_expression e1 in
-        (* generates the code for [e1] and returns the result llvalue *)
-      let t2 = gen_expression e2 in
-        (* the same for e2 *)
-      Llvm.build_add t1 t2 "plus" builder
-	(* appends an 'add' instruction and returns the result llvalue *)
+     let t1 = gen_expression e1 in
+     (* generates the code for [e1] and returns the result llvalue *)
+     let t2 = gen_expression e2 in
+     (* the same for e2 *)
+     Llvm.build_add t1 t2 "plus" builder
+  (* appends an 'add' instruction and returns the result llvalue *)
   | Minus (e1,e2) ->
-      let t1 = gen_expression e1 in
-        (* generates the code for [e1] and returns the result llvalue *)
-      let t2 = gen_expression e2 in
-        (* the same for e2 *)
-      Llvm.build_sub t1 t2 "minus" builder
-	(* appends an 'minus' instruction and returns the result llvalue *)
+     let t1 = gen_expression e1 in
+     (* generates the code for [e1] and returns the result llvalue *)
+     let t2 = gen_expression e2 in
+     (* the same for e2 *)
+     Llvm.build_sub t1 t2 "minus" builder
+  (* appends an 'minus' instruction and returns the result llvalue *)
   | Mul (e1,e2) ->
-      let t1 = gen_expression e1 in
-        (* generates the code for [e1] and returns the result llvalue *)
-      let t2 = gen_expression e2 in
-        (* the same for e2 *)
-      Llvm.build_mul t1 t2 "mul" builder
-	(* appends an 'mul' instruction and returns the result llvalue *)
+     let t1 = gen_expression e1 in
+     (* generates the code for [e1] and returns the result llvalue *)
+     let t2 = gen_expression e2 in
+     (* the same for e2 *)
+     Llvm.build_mul t1 t2 "mul" builder
+  (* appends an 'mul' instruction and returns the result llvalue *)
   | Div (e1,e2) ->
-      let t1 = gen_expression e1 in
-        (* generates the code for [e1] and returns the result llvalue *)
-      let t2 = gen_expression e2 in
-        (* the same for e2 *)
-      Llvm.build_udiv t1 t2 "div" builder
-	(* appends an 'div' instruction and returns the result llvalue *)
-  | _ -> raise TODO
+     let t1 = gen_expression e1 in
+     (* generates the code for [e1] and returns the result llvalue *)
+     let t2 = gen_expression e2 in
+     (* the same for e2 *)
+     Llvm.build_udiv t1 t2 "div" builder
+  (* appends an 'div' instruction and returns the result llvalue *)
+  | _ ->
+     Printf.printf "gen_expression";
+     raise TODO
 
-let rec gen_declaration decList : unit =
-  match decList with
+let rec gen_declaration : declaration -> unit = function
   | [] -> ()
   | (Ast.Dec_Ident hd_str)::tail -> 
-      ignore(Llvm.build_alloca int_type hd_str builder)
+     ignore(Llvm.build_alloca int_type hd_str builder)
   | (Ast.Dec_Array (hd_str,num)):: tail ->
-      ignore(Llvm.build_alloca (Llvm.array_type int_type num) hd_str builder)
-
+     ignore(Llvm.build_alloca (Llvm.array_type int_type num) hd_str builder)
+	    
 let rec gen_statement : statement -> unit = function
   | Assign (LHS_Ident(l1),e1) -> 
       let t1 = gen_expression e1 in
-      let v1 = SymbolTableList.lookup(l1) in
+      let v1 = const_string(l1) in
+      SymbolTableList.set l1 t1;
       ignore(Llvm.build_store v1 t1 builder)
   | Block (d1, stList) ->
       SymbolTableList.open_scope();
       gen_declaration d1;
       List.iter gen_statement stList;
       SymbolTableList.close_scope();
-  | _ -> raise TODO
+  | If (exprb,st1, st2) ->
+     let b = (gen_expression exprb) in 
+     if (b = (const_int 0)) then
+       begin
+	 match st2 with
+	 |None -> ()
+	 |Some st2_aux -> gen_statement st2_aux
+       end
+     else
+       gen_statement st1
+  | While (exprb,st) ->
+     let b = gen_expression exprb in
+     if (b != (const_int 0)) then
+       begin
+	 gen_statement st;
+	 gen_statement (While(exprb,st))
+       end
+	 
+	  
+		     
+  | _ ->
+     Printf.printf "gen_statement"
+     (*raise TODO*)
 
 
 
 
 (* function that turns the code generated for an expression into a valid LLVM code *)
-let gen (e : expression) : unit =
+let gen e : unit =
   let the_function = Llvm.declare_function "main" (Llvm.function_type int_type [||]) the_module in
   let bb = Llvm.append_block context "entry" the_function in
   Llvm.position_at_end bb builder;
-  let x = gen_expression e in
-  ignore (Llvm.build_ret x builder)
+  (*let x = gen_expression e in
+  ignore (Llvm.build_ret x builder)*)
+  gen_statement e;
+  ignore (Llvm.build_ret_void builder)
