@@ -20,17 +20,6 @@ let add id v =
       if List.mem_assoc id scope
       then failwith ("SymbolTable.add: " ^ id ^ " already defined in the current scope")
       else st := ((id,v)::scope)::l
-
-let set id v =
-  match !st with
-  | [] -> failwith "SymbolTabl.set: no open scope"
-  | scope::l ->
-     if List.mem_assoc id scope
-     then
-       let aux = List.remove_assoc id scope in
-       st:= ((id,v)::aux)::l
-     else
-       st:=((id,v)::scope)::l
 				    
 (* lookup the 'llvalue' of a symbol from its id in the innermost scope *)
 let lookup id =

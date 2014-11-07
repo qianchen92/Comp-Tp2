@@ -102,41 +102,26 @@ let rec gen_expression : expression -> Llvm.llvalue = function
      Printf.printf "gen_expression";
      raise TODO
 
-let rec gen_declaration : declaration -> unit = function
+let rec gen_declaration the_function : declaration -> unit = function
   | [] -> ()
-  | (Ast.Dec_Ident hd_str)::tail -> 
-     ignore(Llvm.build_alloca int_type hd_str builder)
+  | (Ast.Dec_Ident hd_str)::tail ->
+     let emplacement = create_entry_block_alloca the_function hd_str int_type in
+     SymbolTableList.add hd_str emplacement
+			 
   | (Ast.Dec_Array (hd_str,num)):: tail ->
-     ignore(Llvm.build_alloca (Llvm.array_type int_type num) hd_str builder)
-	    
-let rec gen_statement : statement -> unit = function
+     let emplacement = create_entry_block_array_alloca the_function hd_str int_array_type num in
+     SymbolTableList.add hd_str emplacement
+     
+let rec gen_statement the_function: statement -> unit = function
   | Assign (LHS_Ident(l1),e1) -> 
       let t1 = gen_expression e1 in
-      let v1 = const_string(l1) in
-      SymbolTableList.set l1 t1;
-      ignore(Llvm.build_store v1 t1 builder)
+      let emplacement = SymbolTableList.lookup(l1) in
+      ignore(Llvm.build_store emplacement t1 builder)
   | Block (d1, stList) ->
       SymbolTableList.open_scope();
-      gen_declaration d1;
-      List.iter gen_statement stList;
+      gen_declaration the_function d1;
+      List.iter (gen_statement the_function) stList;
       SymbolTableList.close_scope();
-  | If (exprb,st1, st2) ->
-     let b = (gen_expression exprb) in 
-     if (b = (const_int 0)) then
-       begin
-	 match st2 with
-	 |None -> ()
-	 |Some st2_aux -> gen_statement st2_aux
-       end
-     else
-       gen_statement st1
-  | While (exprb,st) ->
-     let b = gen_expression exprb in
-     if (b != (const_int 0)) then
-       begin
-	 gen_statement st;
-	 gen_statement (While(exprb,st))
-       end
 	 
 	  
 		     
@@ -154,5 +139,5 @@ let gen e : unit =
   Llvm.position_at_end bb builder;
   (*let x = gen_expression e in
   ignore (Llvm.build_ret x builder)*)
-  gen_statement e;
+  gen_statement the_function e;
   ignore (Llvm.build_ret_void builder)
