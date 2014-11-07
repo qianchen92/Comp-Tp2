@@ -1,0 +1,10 @@
+{
+INT X
+X:=4
+IF X
+THEN
+X:=5
+ELSE
+X:=2
+FI
+}
