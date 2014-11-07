@@ -122,7 +122,56 @@ let rec gen_statement the_function: statement -> unit = function
       gen_declaration the_function d1;
       List.iter (gen_statement the_function) stList;
       SymbolTableList.close_scope();
-	 
+  | If(cond,then_, else_option) ->
+      let cond = gen_expression cond in
+      let cond_val = Llvm.build_icmp Llvm.Icmp.Eq cond zero_int "ifcond" builder in
+      let start_bb = Llvm.insertion_block builder in
+      let the_function = Llvm.block_parent start_bb in
+
+      let then_bb = Llvm.append_block context "then" the_function in
+      Llvm.position_at_end then_bb builder;
+      ignore(gen_statement the_function then_ );
+      let new_then_bb = Llvm.insertion_block builder in
+      
+      let else_bb = Llvm.append_block context "else" the_function in
+      Llvm.position_at_end else_bb builder;
+      begin
+        match else_option with
+        | None -> 
+          let new_else_bb = Llvm.insertion_block builder in
+          let merge_bb = Llvm.append_block context "ifcont" the_function in
+          Llvm.position_at_end merge_bb builder;
+
+          Llvm.position_at_end start_bb builder;
+          ignore (Llvm.build_cond_br cond_val then_bb else_bb builder);
+          
+          Llvm.position_at_end new_then_bb builder; 
+          ignore (Llvm.build_br merge_bb builder);
+          Llvm.position_at_end new_else_bb builder; 
+          ignore (Llvm.build_br merge_bb builder);
+
+          Llvm.position_at_end merge_bb builder;
+          
+        | Some else_ ->
+          ignore(gen_statement the_function else_);
+          let new_else_bb = Llvm.insertion_block builder in
+          let merge_bb = Llvm.append_block context "ifcont" the_function in
+          Llvm.position_at_end merge_bb builder;
+      
+          Llvm.position_at_end start_bb builder;
+          ignore (Llvm.build_cond_br cond_val then_bb else_bb builder);
+          
+          Llvm.position_at_end new_then_bb builder; 
+          ignore (Llvm.build_br merge_bb builder);
+          Llvm.position_at_end new_else_bb builder; 
+          ignore (Llvm.build_br merge_bb builder);
+
+          Llvm.position_at_end merge_bb builder;
+      end
+
+   | While (exprb,prog) ->
+          
+      
 	  
 		     
   | _ ->
