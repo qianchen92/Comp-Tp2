@@ -142,9 +142,7 @@ let rec gen_statement the_function: statement -> unit = function
           let merge_bb = Llvm.append_block context "ifcont" the_function in
           Llvm.position_at_end merge_bb builder;
 
-          Llvm.position_at_end start_bb builder;
           ignore (Llvm.build_cond_br cond_val then_bb else_bb builder);
-          
           Llvm.position_at_end new_then_bb builder; 
           ignore (Llvm.build_br merge_bb builder);
           Llvm.position_at_end new_else_bb builder; 
@@ -156,7 +154,6 @@ let rec gen_statement the_function: statement -> unit = function
           ignore(gen_statement the_function else_);
           let new_else_bb = Llvm.insertion_block builder in
           let merge_bb = Llvm.append_block context "ifcont" the_function in
-          Llvm.position_at_end merge_bb builder;
       
           Llvm.position_at_end start_bb builder;
           ignore (Llvm.build_cond_br cond_val then_bb else_bb builder);
@@ -169,8 +166,26 @@ let rec gen_statement the_function: statement -> unit = function
           Llvm.position_at_end merge_bb builder;
       end
 
-   | While (exprb,prog) ->
-          
+   | While (cond,prog) ->
+      let cond = gen_expression cond in
+      let cond_val = Llvm.build_icmp Llvm.Icmp.Eq cond zero_int "whilecond" builder in
+
+      let start_bb = Llvm.insertion_block builder in
+      let the_function = Llvm.block_parent start_bb in
+
+      let do_bb = Llvm.append_block context "do" the_function in
+      Llvm.position_at_end do_bb builder;
+      ignore(gen_statement the_function prog);
+      
+      
+      let done_bb = Llvm.append_block context "done" the_function in
+
+      Llvm.position_at_end do_bb builder;
+      ignore(Llvm.build_br done_bb builder);
+      
+      Llvm.position_at_end start_bb builder;
+      ignore(Llvm.build_cond_br cond_val do_bb done_bb builder);
+      Llvm.position_at_end done_bb builder
       
 	  
 		     
