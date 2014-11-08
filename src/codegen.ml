@@ -121,7 +121,7 @@ let rec gen_statement the_function: statement -> unit = function
       SymbolTableList.open_scope();
       gen_declaration the_function d1;
       List.iter (gen_statement the_function) stList;
-      SymbolTableList.close_scope();
+      SymbolTableList.close_scope()
   | If(cond,then_, else_option) ->
       let cond = gen_expression cond in
       let cond_val = Llvm.build_icmp Llvm.Icmp.Eq cond zero_int "ifcond" builder in
@@ -165,8 +165,8 @@ let rec gen_statement the_function: statement -> unit = function
 
           Llvm.position_at_end merge_bb builder;
       end
-
-   | While (cond,prog) ->
+	
+  | While (cond,prog) ->
       let cond = gen_expression cond in
       let cond_val = Llvm.build_icmp Llvm.Icmp.Eq cond zero_int "whilecond" builder in
 
@@ -179,29 +179,71 @@ let rec gen_statement the_function: statement -> unit = function
       
       
       let done_bb = Llvm.append_block context "done" the_function in
-
+      
       Llvm.position_at_end do_bb builder;
       ignore(Llvm.build_br done_bb builder);
       
       Llvm.position_at_end start_bb builder;
       ignore(Llvm.build_cond_br cond_val do_bb done_bb builder);
       Llvm.position_at_end done_bb builder
-      
-	  
-		     
+    
+    
   | _ ->
-     Printf.printf "gen_statement"
-     (*raise TODO*)
+     raise TODO
+
+(** [type_llvm type_] return the llvm's type of the predefined type typ*)
+let type_llvm type_ =
+  match type_ with
+  |Type_Int -> int_type
+  |Type_Void -> void_type
+
+
+let gen_proto proto_ =
+  match proto_ with
+  |(type_,ident_,args_) ->
+     let int_ = Array.make (Array.length args_) int_type in
+     let returnType = type_llvm type_ in
+     let ft = Llvm.function_type returnType int_ in
+     let f =
+       match Llvm.lookup_function ident_ the_module with
+	   | None -> Llvm.declare_function ident_ ft the_module
+	   | Some f ->
+	      if Array.length (Llvm.basic_blocks f) == 0 then () else
+		raise (Error "redefinition of function");
+	      if Array.length (Llvm.params f) == Array.length args_ then () else
+		raise (Error "redefinition of function with different # args");
+	      f
+     in
+     Array.iteri (fun i a ->
+		  let n = args_.(i) in
+		  Llvm.set_value_name n a;
+		 ) (Llvm.params f);
+     f
+(** [gen_function prog] generate code of the function prog*)
+let rec gen_function : program_unit -> unit = function
+  | Proto (type_,ident_,args_) ->
+     ignore(gen_proto (type_,ident_,args_))
+  | Function (proto,statement_) ->
+     let the_function = gen_proto proto in
+     let bb = Llvm.append_block context "entry"  the_function in
+     Llvm.position_at_end bb builder;
+     gen_statement the_function statement_;
+     ignore (Llvm.build_ret_void builder)
+     
+       
+	       
+		   
 
 
 
 
 (* function that turns the code generated for an expression into a valid LLVM code *)
 let gen e : unit =
-  let the_function = Llvm.declare_function "main" (Llvm.function_type int_type [||]) the_module in
+  (*let the_function = Llvm.declare_function "main" (Llvm.function_type int_type [||]) the_module in
   let bb = Llvm.append_block context "entry" the_function in
   Llvm.position_at_end bb builder;
   (*let x = gen_expression e in
   ignore (Llvm.build_ret x builder)*)
-  gen_statement the_function e;
-  ignore (Llvm.build_ret_void builder)
+  (*gen_statement the_function e;
+  ignore (Llvm.build_ret_void builder)*)*)
+  List.iter gen_function e
