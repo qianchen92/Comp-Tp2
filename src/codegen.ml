@@ -65,11 +65,6 @@ let create_entry_block_array_alloca the_function var_name typ size =
 (* generation of code for each VSL+ construct *)
 
 let rec gen_expression : expression -> Llvm.llvalue = function
-  | Const n ->
-     const_int n
-  (* returns a constant llvalue for that integer *)
-  | Expr_Ident id ->
-     SymbolTableList.lookup(id)
   | Plus (e1,e2) ->
      let t1 = gen_expression e1 in
      (* generates the code for [e1] and returns the result llvalue *)
@@ -97,6 +92,25 @@ let rec gen_expression : expression -> Llvm.llvalue = function
      let t2 = gen_expression e2 in
      (* the same for e2 *)
      Llvm.build_udiv t1 t2 "div" builder
+  | Const n ->
+     const_int n
+  (* returns a constant llvalue for that integer *)
+  | Expr_Ident id ->
+     SymbolTableList.lookup(id)
+  | ECall (id, args) ->
+     
+     let callee =
+       match Llvm.lookup_function id the_module with
+       | Some callee -> callee
+       | None -> raise (Error "unknown function referenced")
+     in
+     let params = Llvm.params callee in
+     
+     (* If argument mismatch error. *)
+     if Array.length params != Array.length args then
+       raise (Error "incorrect # arguments passed");
+     let args = Array.map gen_expression args in
+     Llvm.build_call callee args "calltmp" builder
   (* appends an 'div' instruction and returns the result llvalue *)
   | _ ->
      Printf.printf "gen_expression";
@@ -205,23 +219,21 @@ let type_llvm type_ =
 let gen_proto proto_ =
   match proto_ with
   |(type_,ident_,args_) ->
+    
      let int_ = Array.make (Array.length args_) int_type in
      let returnType = type_llvm type_ in
      let ft = Llvm.function_type returnType int_ in
      let f =
        match Llvm.lookup_function ident_ the_module with
-	   | None -> Llvm.declare_function ident_ ft the_module
-	   | Some f ->
+       | None ->
+	  Llvm.declare_function ident_ ft the_module
+       | Some f ->
 	      if Array.length (Llvm.basic_blocks f) == 0 then () else
 		raise (Error "redefinition of function");
 	      if Array.length (Llvm.params f) == Array.length args_ then () else
 		raise (Error "redefinition of function with different # args");
 	      f
      in
-     Array.iteri (fun i a ->
-		  let n = args_.(i) in
-		  Llvm.set_value_name n a;
-		 ) (Llvm.params f);
      f
 
 
@@ -230,10 +242,24 @@ let rec gen_function : program_unit -> unit = function
   | Proto (type_,ident_,args_) ->
      ignore(gen_proto (type_,ident_,args_))
   | Function (proto,statement_) ->
+     (*SymbolTableList.open_scope();*)
      let the_function = gen_proto proto in
+     let (_,_,args_) = proto in
      let bb = Llvm.append_block context "entry"  the_function in
      Llvm.position_at_end bb builder;
-     gen_statement the_function statement_
+     match statement_ with
+     |Block (dec,statList) ->
+       SymbolTableList.open_scope();
+       Array.iteri (fun i a ->
+		  let n = args_.(i) in
+		  Llvm.set_value_name n a;
+		  SymbolTableList.add n a;
+		   ) (Llvm.params the_function);
+       gen_declaration the_function dec;
+       List.iter (gen_statement the_function) statList;
+       SymbolTableList.close_scope()
+     |_ -> raise (Error "missing {} after a function")
+     (*SymbolTableList.close_scope()*)
      
        
 	       

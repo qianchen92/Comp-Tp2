@@ -36,7 +36,7 @@ let main ch =
   let the_execution_engine = create_execution_engine () in
   let the_pm = create_pass_manager the_execution_engine in
   (* parsing *)
-  let ast = Parser.parse_channel Parser.statement ch in
+  let ast = Parser.parse_channel Parser.program ch in
     (* NOTE: replace Parser.expression by Parser.statement then by Parser.program according to your progression. *)
   (* code generation *)
   Codegen.gen ast;
@@ -44,9 +44,10 @@ let main ch =
   (* optimization *)
   let _ = Llvm.PassManager.run_module Codegen.the_module the_pm in
   Llvm.dump_module Codegen.the_module
-
+		   
 let _ =
   let ch =
     try open_in Sys.argv.(1)
     with _ -> stdin in
   main ch
+       

@@ -1,0 +1,9 @@
+{
+INT x
+x:=3
+WHILE x DO
+{
+x:=x-1
+}
+DONE
+}

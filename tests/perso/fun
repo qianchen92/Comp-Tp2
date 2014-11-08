@@ -1,4 +1,10 @@
-FUNC VOID main() {
+PROTO INT mult2(k)
+FUNC INT main() {
      	  INT x
 	  x:=3
+	  RETURN x
 	}
+FUNC INT mult2(k)
+{
+	RETURN k*2
+}
