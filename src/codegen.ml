@@ -117,6 +117,10 @@ let rec gen_statement the_function: statement -> unit = function
       let t1 = gen_expression e1 in
       let emplacement = SymbolTableList.lookup(l1) in
       ignore(Llvm.build_store emplacement t1 builder)
+  | Return expr ->
+     let value = gen_expression expr in
+     ignore (Llvm.build_ret value builder)
+
   | Block (d1, stList) ->
       SymbolTableList.open_scope();
       gen_declaration the_function d1;
@@ -219,6 +223,8 @@ let gen_proto proto_ =
 		  Llvm.set_value_name n a;
 		 ) (Llvm.params f);
      f
+
+
 (** [gen_function prog] generate code of the function prog*)
 let rec gen_function : program_unit -> unit = function
   | Proto (type_,ident_,args_) ->
@@ -227,8 +233,7 @@ let rec gen_function : program_unit -> unit = function
      let the_function = gen_proto proto in
      let bb = Llvm.append_block context "entry"  the_function in
      Llvm.position_at_end bb builder;
-     gen_statement the_function statement_;
-     ignore (Llvm.build_ret_void builder)
+     gen_statement the_function statement_
      
        
 	       
