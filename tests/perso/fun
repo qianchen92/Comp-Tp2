@@ -1,0 +1,4 @@
+FUNC VOID main() {
+     	  INT x
+	  x:=3
+	}
