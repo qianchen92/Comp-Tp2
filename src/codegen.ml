@@ -134,7 +134,25 @@ let rec gen_statement the_function: statement -> unit = function
   | Return expr ->
      let value = gen_expression expr in
      ignore (Llvm.build_ret value builder)
+  | SCall (id, args) ->
+     
+     let callee =
+       match Llvm.lookup_function id the_module with
+       | Some callee -> callee
+       | None -> raise (Error "unknown function referenced")
+     in
+     let params = Llvm.params callee in
+     
+     (* If argument mismatch error. *)
+     if Array.length params != Array.length args then
+       raise (Error "incorrect # arguments passed");
+     let args = Array.map gen_expression args in
+     ignore(Llvm.build_call callee args "calltmp" builder)
 
+  | Print (itList) ->
+     
+
+	    
   | Block (d1, stList) ->
       SymbolTableList.open_scope();
       gen_declaration the_function d1;
