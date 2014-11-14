@@ -152,8 +152,21 @@ let rec gen_statement the_function: statement -> unit = function
      ignore(Llvm.build_call callee args "calltmp" builder)
 
   | Print (itList) ->
-     
-
+     let rec aux l =
+       match l with
+       | [] -> ()
+       | hd::tl ->
+	  begin
+	    match hd with
+	    |Print_Expr e ->
+	      let llv = gen_expression e in
+	      ignore(Llvm.build_call func_printf ([|(const_string "%d");llv|]) "callprint" builder)
+	    |Print_Text e ->
+	      ignore(Llvm.build_call func_printf ([|(const_string "%s");(const_string e)|]) "callprint" builder)
+	  end;
+	  aux tl
+     in
+     aux itList
 	    
   | Block (d1, stList) ->
       SymbolTableList.open_scope();
@@ -277,7 +290,8 @@ let rec gen_function : program_unit -> unit = function
 		   ) (Llvm.params the_function);
        gen_declaration the_function dec;
        List.iter (gen_statement the_function) statList;
-       SymbolTableList.close_scope()
+       SymbolTableList.close_scope();
+       ignore (Llvm.build_ret_void builder)
      |_ -> raise (Error "missing {} after a function")
      (*SymbolTableList.close_scope()*)
      
