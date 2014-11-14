@@ -2,6 +2,7 @@ open Ast
 
 exception TODO (* to be used for actions remaining to be done *)
 exception Error of string (* to be used for semantic errors *)
+exception OUT_OF_BOUND
 
 (* global context, main module, and builder for generating code *)
 
@@ -78,20 +79,21 @@ let rec gen_expression : expression -> Llvm.llvalue = function
      let t2 = gen_expression e2 in
      (* the same for e2 *)
      Llvm.build_sub t1 t2 "minus" builder
-  (* appends an 'minus' instruction and returns the result llvalue *)
+  (* appends a 'minus' instruction and returns the result llvalue *)
   | Mul (e1,e2) ->
      let t1 = gen_expression e1 in
      (* generates the code for [e1] and returns the result llvalue *)
      let t2 = gen_expression e2 in
      (* the same for e2 *)
      Llvm.build_mul t1 t2 "mul" builder
-  (* appends an 'mul' instruction and returns the result llvalue *)
+  (* appends a 'mul' instruction and returns the result llvalue *)
   | Div (e1,e2) ->
      let t1 = gen_expression e1 in
      (* generates the code for [e1] and returns the result llvalue *)
      let t2 = gen_expression e2 in
      (* the same for e2 *)
      Llvm.build_udiv t1 t2 "div" builder
+  (* appends a 'div' instruction and returns the result llvalue *)
   | Const n ->
      const_int n
   (* returns a constant llvalue for that integer *)
@@ -112,6 +114,13 @@ let rec gen_expression : expression -> Llvm.llvalue = function
      let args = Array.map gen_expression args in
      Llvm.build_call callee args "calltmp" builder
   (* appends an 'div' instruction and returns the result llvalue *)
+  
+  | ArrayElem (id, e) ->
+      let t = gen_expression e in    
+      if t >= Llvm.array_length then
+        raise OUT_OF_BOUND
+       Llvm.build_gep t id "array_elt" builder
+       
   | _ ->
      Printf.printf "gen_expression";
      raise TODO
@@ -173,6 +182,7 @@ let rec gen_statement the_function: statement -> unit = function
       gen_declaration the_function d1;
       List.iter (gen_statement the_function) stList;
       SymbolTableList.close_scope()
+      
   | If(cond,then_, else_option) ->
       let cond = gen_expression cond in
       let cond_val = Llvm.build_icmp Llvm.Icmp.Eq cond zero_int "ifcond" builder in
@@ -295,7 +305,8 @@ let rec gen_function : program_unit -> unit = function
      |_ -> raise (Error "missing {} after a function")
      (*SymbolTableList.close_scope()*)
      
-       
+ 
+let rec 
 	       
 		   
 
