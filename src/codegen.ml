@@ -120,11 +120,13 @@ let rec gen_declaration the_function : declaration -> unit = function
   | [] -> ()
   | (Ast.Dec_Ident hd_str)::tail ->
      let emplacement = create_entry_block_alloca the_function hd_str int_type in
-     SymbolTableList.add hd_str emplacement
+     SymbolTableList.add hd_str emplacement;
+		 gen_declaration the_function tail	 
 			 
   | (Ast.Dec_Array (hd_str,num)):: tail ->
      let emplacement = create_entry_block_array_alloca the_function hd_str int_array_type num in
-     SymbolTableList.add hd_str emplacement
+     SymbolTableList.add hd_str emplacement;
+     gen_declaration the_function tail
      
 let rec gen_statement the_function: statement -> unit = function
   | Assign (LHS_Ident(l1),e1) -> 
