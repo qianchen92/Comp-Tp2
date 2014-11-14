@@ -116,10 +116,11 @@ let rec gen_expression : expression -> Llvm.llvalue = function
   (* appends an 'div' instruction and returns the result llvalue *)
   
   | ArrayElem (id, e) ->
-      let t = gen_expression e in    
-      if t >= Llvm.array_length then
-        raise OUT_OF_BOUND
-       Llvm.build_gep t id "array_elt" builder
+     let t = gen_expression e in
+     (*
+      if t >= Llvm.array_length (SymbolTableList.lookup(id))  then
+        raise OUT_OF_BOUND;*)
+     Llvm.build_gep (SymbolTableList.lookup(id)) [|t|] "array_elt" builder
        
   | _ ->
      Printf.printf "gen_expression";
@@ -305,9 +306,6 @@ let rec gen_function : program_unit -> unit = function
      |_ -> raise (Error "missing {} after a function")
      (*SymbolTableList.close_scope()*)
      
- 
-let rec 
-	       
 		   
 
 
