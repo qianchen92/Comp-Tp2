@@ -100,7 +100,6 @@ let rec gen_expression : expression -> Llvm.llvalue = function
   | Expr_Ident id ->
      SymbolTableList.lookup(id)
   | ECall (id, args) ->
-     
      let callee =
        match Llvm.lookup_function id the_module with
        | Some callee -> callee
@@ -113,14 +112,16 @@ let rec gen_expression : expression -> Llvm.llvalue = function
        raise (Error "incorrect # arguments passed");
      let args = Array.map gen_expression args in
      Llvm.build_call callee args "calltmp" builder
-  (* appends an 'div' instruction and returns the result llvalue *)
   
   | ArrayElem (id, e) ->
      let t = gen_expression e in
-     (*
+     (* check if the array is long enough:
       if t >= Llvm.array_length (SymbolTableList.lookup(id))  then
         raise OUT_OF_BOUND;*)
+        
+     (* build_gep returns the address. it does not access the memory *)
      Llvm.build_gep (SymbolTableList.lookup(id)) [|t|] "array_elt" builder
+  (* returns the adress of an element of the array *)  
        
   | _ ->
      Printf.printf "gen_expression";
@@ -143,6 +144,13 @@ let rec gen_statement the_function: statement -> unit = function
       let t1 = gen_expression e1 in
       let emplacement = SymbolTableList.lookup(l1) in
       ignore(Llvm.build_store emplacement t1 builder)
+
+  | Assign (LHS_ArrayElem(id,e),e1) ->
+      let t = gen_expression e in
+      let t1 = gen_expression e1 in     
+      let emplacement = Llvm.build_gep (SymbolTableList.lookup(id)) [|t|] "array_elt" builder in
+      ignore(Llvm.build_store emplacement t1 builder)
+  
   | Return expr ->
      let value = gen_expression expr in
      ignore (Llvm.build_ret value builder)
