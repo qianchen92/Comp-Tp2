@@ -136,10 +136,6 @@ let rec gen_expression : expression -> Llvm.llvalue = function
      Llvm.build_gep (SymbolTableList.lookup(id)) [|t|] "array_elt" builder
   (* returns the adress of an element of the array *)  
        
-  | _ ->
-     Printf.printf "gen_expression";
-     raise TODO
-
 let rec gen_declaration the_function : declaration -> unit = function
   | [] -> ()
   | (Ast.Dec_Ident hd_str)::tail ->
@@ -198,7 +194,26 @@ let rec gen_statement the_function: statement -> unit = function
 	  aux tl
      in
      aux itList
-	    
+
+  | Read (itList) ->
+     let rec aux l =
+       match l with
+       |[] -> ()
+       |hd ::tl ->
+	 begin
+	   match hd with
+	   |LHS_Ident id ->
+	     let emplacement = SymbolTableList.lookup id in
+	     ignore(Llvm.build_call func_scanf ([|(const_string "%d");emplacement|]) "callread" builder);
+	   |LHS_ArrayElem (id,exp) ->
+	     let e = gen_expression exp in
+	     let emplacement = Llvm.build_gep (SymbolTableList.lookup(id)) [|e|] "array_elt" builder in
+	     ignore(Llvm.build_call func_scanf ([|(const_string "%d");emplacement|]) "callread" builder)
+	 end;
+	 aux tl
+     in
+     aux itList
+	 
   | Block (d1, stList) ->
       SymbolTableList.open_scope();
       gen_declaration the_function d1;
@@ -270,9 +285,6 @@ let rec gen_statement the_function: statement -> unit = function
       ignore(Llvm.build_cond_br cond_val do_bb done_bb builder);
       Llvm.position_at_end done_bb builder
     
-    
-  | _ ->
-     raise TODO
 
 (** [type_llvm type_] return the llvm's type of the predefined type typ*)
 let type_llvm type_ =
