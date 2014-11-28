@@ -40,11 +40,11 @@ let main ch =
     (* NOTE: replace Parser.expression by Parser.statement then by Parser.program according to your progression. *)
   (* code generation *)
   Codegen.gen ast;
-  Llvm.dump_module Codegen.the_module;
+  Llvm.dump_module Codegen.the_module(*;
   (* optimization *)
   let _ = Llvm.PassManager.run_module Codegen.the_module the_pm in
   Llvm.dump_module Codegen.the_module
-		   
+*)		   
 let _ =
   let ch =
     try open_in Sys.argv.(1)
