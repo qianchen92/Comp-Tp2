@@ -1,0 +1,8 @@
+{
+INT X
+X:=4
+PRINT "Voici X : ", X
+READ X
+X:=X+1
+PRINT "Le nombre suivant est ", X
+}

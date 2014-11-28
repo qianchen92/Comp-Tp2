@@ -1,0 +1,7 @@
+FUNC VOID main() {
+	INT t[3]
+  t[0] := 4 
+	READ X,t[1]
+	t[2] := X+1
+	PRINT t[0], t[1], t[2]
+	}
