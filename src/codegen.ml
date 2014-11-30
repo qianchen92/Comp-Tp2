@@ -154,12 +154,12 @@ let rec gen_statement the_function: statement -> unit = function
       let emplacement = SymbolTableList.lookup(l1) in
       ignore(Llvm.build_store emplacement t1 builder)
 
-(*  | Assign (LHS_ArrayElem(id,e),e1) ->
+  | Assign (LHS_ArrayElem(id,e),e1) ->
       let t = gen_expression e in
       let t1 = gen_expression e1 in     
       let emplacement = Llvm.build_gep (SymbolTableList.lookup(id)) [|t|] "array_elt" builder in
       ignore(Llvm.build_store emplacement t1 builder)
- *)  
+ 
   | Return expr ->
      let value = gen_expression expr in
      ignore (Llvm.build_ret value builder)
@@ -320,7 +320,7 @@ let rec gen_function : program_unit -> unit = function
   | Function (proto,statement_) ->
      (*SymbolTableList.open_scope();*)
      let the_function = gen_proto proto in
-     let (_,_,args_) = proto in
+     let (type_,_,args_) = proto in
      let bb = Llvm.append_block context "entry"  the_function in
      Llvm.position_at_end bb builder;
      match statement_ with
@@ -334,7 +334,7 @@ let rec gen_function : program_unit -> unit = function
        gen_declaration the_function dec;
        List.iter (gen_statement the_function) statList;
        SymbolTableList.close_scope();
-       ignore (Llvm.build_ret_void builder)
+       if type_ = Type_Void then ignore (Llvm.build_ret_void builder)
      |_ -> raise (Error "missing {} after a function")
      (*SymbolTableList.close_scope()*)
      
