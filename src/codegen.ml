@@ -331,8 +331,10 @@ let rec gen_function : program_unit -> unit = function
 		  Llvm.set_value_name n a;
 		  SymbolTableList.add n a;
 		   ) (Llvm.params the_function);
+       SymbolTableList.open_scope();
        gen_declaration the_function dec;
        List.iter (gen_statement the_function) statList;
+       SymbolTableList.close_scope();
        SymbolTableList.close_scope();
        if type_ = Type_Void then ignore (Llvm.build_ret_void builder)
      |_ -> raise (Error "missing {} after a function")
