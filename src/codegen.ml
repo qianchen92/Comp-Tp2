@@ -1,16 +1,3 @@
-(*
-Voilà les changements que j'ai effectué le 21/11; je veux bien que tu vérifies :)
-
-Assign (LHS_ArrayElem(id,e),e1)
-
-Remarque que dans l'énoncé, «lecture» correspond à la lecture depuis les entrées (clavier etc)
-Du coup il faut se pencher sur "read_item" de ast.ml
-
-Il reste encore des TODO à remplacer
-*)
-
-
-
 open Ast
 
 exception TODO (* to be used for actions remaining to be done *)
